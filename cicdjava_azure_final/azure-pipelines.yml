@@ -1,0 +1,43 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ACR_NAME: ''
+  ACR_LOGIN_SERVER: ''
+  IMAGE_NAME: 'cicdjava'
+  TAG: '$(Build.BuildId)'
+  AZURE_WEBAPP_NAME: ''
+  AZURE_RESOURCE_GROUP: ''
+
+steps:
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'clean package -DskipTests=false'
+    options: '-B'
+
+- script: |
+    echo "Build finished. Showing artifact..."
+    ls -l target
+  displayName: 'List build artifacts'
+
+- script: |
+    echo "Logging in to ACR"
+    echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
+    docker build -t $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG) .
+    docker push $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)
+  displayName: 'Build and push Docker image'
+  env:
+    ACR_USERNAME: $(ACR_USERNAME)
+    ACR_PASSWORD: $(ACR_PASSWORD)
+
+- task: AzureWebAppContainer@1
+  inputs:
+    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+    appName: '$(AZURE_WEBAPP_NAME)'
+    resourceGroupName: '$(AZURE_RESOURCE_GROUP)'
+    containers: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)'
+  displayName: 'Deploy to Azure Web App for Containers'
