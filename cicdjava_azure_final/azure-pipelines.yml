@@ -1,31 +1,35 @@
 trigger:
-  - main
+- main
 
-# Use your self-hosted agent pool instead of Microsoft-hosted
+# Use self-hosted agent
 pool:
-  name: Default   # <-- your agent pool name (where LAPTOP-8D8K13ES is registered)
+  name: Default  # your self-hosted agent pool
 
 variables:
-  ACR_NAME: 'myacrname'                      # <-- replace with your Azure Container Registry name
-  ACR_LOGIN_SERVER: 'myacrname.azurecr.io'   # <-- replace with your ACR login server
+  ACR_NAME: 'myacrname'                      # Replace with your Azure Container Registry name
+  ACR_LOGIN_SERVER: 'myacrname.azurecr.io'   # Replace with your ACR login server
   IMAGE_NAME: 'cicdjava'
   TAG: '$(Build.BuildId)'
-  AZURE_WEBAPP_NAME: 'mywebapp'              # <-- replace with your Web App name
-  AZURE_RESOURCE_GROUP: 'myresourcegroup'    # <-- replace with your resource group
-  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # <-- replace with your real service connection name
+  AZURE_WEBAPP_NAME: 'mywebapp'             # Replace with your Azure Web App name
+  AZURE_RESOURCE_GROUP: 'myresourcegroup'   # Replace with your resource group
+  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # Replace with your service connection name
 
 steps:
+# Step 1: Build Java project with Maven
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     goals: 'clean package -DskipTests=false'
     options: '-B'
+  displayName: 'Build Java project'
 
+# Step 2: List artifacts (optional)
 - script: |
-    echo "Build finished. Showing artifact..."
+    echo "Build finished. Listing artifacts..."
     ls -l target
   displayName: 'List build artifacts'
 
+# Step 3: Build and push Docker image to ACR
 - script: |
     echo "Logging in to ACR"
     echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
@@ -36,9 +40,10 @@ steps:
     ACR_USERNAME: $(ACR_USERNAME)
     ACR_PASSWORD: $(ACR_PASSWORD)
 
+# Step 4: Deploy Docker image to Azure Web App for Containers
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'   # variable now points to real connection
+    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
     appName: '$(AZURE_WEBAPP_NAME)'
     resourceGroupName: '$(AZURE_RESOURCE_GROUP)'
     containers: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)'
