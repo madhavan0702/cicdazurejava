@@ -1,16 +1,18 @@
 trigger:
   - main
 
+# Use your self-hosted agent pool instead of Microsoft-hosted
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default   # <-- your agent pool name (where LAPTOP-8D8K13ES is registered)
 
 variables:
-  ACR_NAME: ''
-  ACR_LOGIN_SERVER: ''
+  ACR_NAME: 'myacrname'                      # <-- replace with your Azure Container Registry name
+  ACR_LOGIN_SERVER: 'myacrname.azurecr.io'   # <-- replace with your ACR login server
   IMAGE_NAME: 'cicdjava'
   TAG: '$(Build.BuildId)'
-  AZURE_WEBAPP_NAME: ''
-  AZURE_RESOURCE_GROUP: ''
+  AZURE_WEBAPP_NAME: 'mywebapp'              # <-- replace with your Web App name
+  AZURE_RESOURCE_GROUP: 'myresourcegroup'    # <-- replace with your resource group
+  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # <-- replace with your real service connection name
 
 steps:
 - task: Maven@3
@@ -36,7 +38,7 @@ steps:
 
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'   # variable now points to real connection
     appName: '$(AZURE_WEBAPP_NAME)'
     resourceGroupName: '$(AZURE_RESOURCE_GROUP)'
     containers: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)'
