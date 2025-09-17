@@ -1,18 +1,18 @@
 trigger:
   - main   # pipeline runs when code is pushed to the 'main' branch
 
-# Use self-hosted agent
+# Use self-hosted or Microsoft-hosted agent
 pool:
-  name: Default  # your self-hosted agent pool
+  vmImage: 'ubuntu-latest'   # change to Default if you’re using self-hosted agent
 
 variables:
-  ACR_NAME: 'myacrname'                      # Replace with your Azure Container Registry name
-  ACR_LOGIN_SERVER: 'myacrname.azurecr.io'   # Replace with your ACR login server
+  ACR_NAME: 'cicdregistry'                       # 🔹 your Azure Container Registry name
+  ACR_LOGIN_SERVER: 'cicdregistry.azurecr.io'    # 🔹 ACR login server (from Azure Portal → ACR → Overview)
   IMAGE_NAME: 'cicdjava'
   TAG: '$(Build.BuildId)'
-  AZURE_WEBAPP_NAME: 'mywebapp'              # Replace with your Azure Web App name
-  AZURE_RESOURCE_GROUP: 'myresourcegroup'    # Replace with your resource group
-  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # Replace with your service connection name
+  AZURE_WEBAPP_NAME: 'cicdjava-app'              # 🔹 your Web App for Containers name
+  AZURE_RESOURCE_GROUP: 'cicd-rg'                # 🔹 your Resource Group name
+  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # 🔹 exact service connection name in DevOps
 
 steps:
 # Step 1: Build Java project with Maven
@@ -23,28 +23,13 @@ steps:
     options: '-B'
   displayName: 'Build Java project'
 
-# Step 2: List artifacts (optional)
+# Step 2: List build artifacts (optional for debug)
 - script: |
     echo "Build finished. Listing artifacts..."
     ls -l target
   displayName: 'List build artifacts'
 
 # Step 3: Build and push Docker image to ACR
-- script: |
-    echo "Logging in to ACR"
-    echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
-    docker build -t $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG) .
-    docker push $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)
-  displayName: 'Build and push Docker image'
-  env:
-    ACR_USERNAME: $(ACR_USERNAME)
-    ACR_PASSWORD: $(ACR_PASSWORD)
-
-# Step 4: Deploy Docker image to Azure Web App for Containers
-- task: AzureWebAppContainer@1
+- task: Docker@2
   inputs:
-    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
-    appName: '$(AZURE_WEBAPP_NAME)'
-    resourceGroupName: '$(AZURE_RESOURCE_GROUP)'
-    containers: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(TAG)'
-  displayName: 'Deploy to Azure Web App for Containers'
+    containerRegistry: '$(AZURE_SERVICE_CONNECTION)'
