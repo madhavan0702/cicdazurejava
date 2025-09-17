@@ -1,15 +1,5 @@
 trigger:
-- task: Maven@4
-  inputs:
-    mavenPomFile: 'pom.xml'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    javaHomeOption: 'JDKVersion'
-    mavenVersionOption: 'Default'
-    mavenAuthenticateFeed: false
-    effectivePomSkip: false
-    sonarQubeRunAnalysis: false
-- main
+  - main   # pipeline runs when code is pushed to the 'main' branch
 
 # Use self-hosted agent
 pool:
@@ -20,8 +10,8 @@ variables:
   ACR_LOGIN_SERVER: 'myacrname.azurecr.io'   # Replace with your ACR login server
   IMAGE_NAME: 'cicdjava'
   TAG: '$(Build.BuildId)'
-  AZURE_WEBAPP_NAME: 'mywebapp'             # Replace with your Azure Web App name
-  AZURE_RESOURCE_GROUP: 'myresourcegroup'   # Replace with your resource group
+  AZURE_WEBAPP_NAME: 'mywebapp'              # Replace with your Azure Web App name
+  AZURE_RESOURCE_GROUP: 'myresourcegroup'    # Replace with your resource group
   AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # Replace with your service connection name
 
 steps:
