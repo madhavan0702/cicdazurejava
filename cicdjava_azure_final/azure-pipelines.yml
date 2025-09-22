@@ -10,31 +10,31 @@ variables:
   imageName: 'cicdjava'
 
 stages:
+  # ---------------------------
+  # Stage 1: Build Java JAR
+  # ---------------------------
   - stage: Build
     displayName: 'Build Java App'
     jobs:
       - job: MavenBuild
+        displayName: 'Maven Build'
         steps:
+          # Step 1: Checkout Code
+          - checkout: self
+
+          # Step 2: Build with Maven
           - task: Maven@3
+            displayName: 'Build with Maven'
             inputs:
               mavenPomFile: 'pom.xml'
               goals: 'clean package'
 
+          # Step 3: Publish JAR Artifact
           - publish: target/*.jar
             artifact: drop
 
+  # ---------------------------
+  # Stage 2: Build & Push Docker Image
+  # ---------------------------
   - stage: Docker
-    displayName: 'Build and Push Docker Image'
-    dependsOn: Build
-    jobs:
-      - job: DockerBuildPush
-        steps:
-          - task: Docker@2
-            displayName: 'Build and Push Image to ACR'
-            inputs:
-              command: 'buildAndPush'
-              repository: '$(imageName)'
-              dockerfile: 'Dockerfile'
-              containerRegistry: 'MyACRConnection'
-              tags: |
-                $(Build.BuildId)
+    displayName: 'B
