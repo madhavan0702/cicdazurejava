@@ -48,3 +48,9 @@ stages:
           - task: Docker@2
             displayName: 'Build and Push Image to ACR'
             inputs:
+              command: 'buildAndPush'
+              containerRegistry: 'My-Azure-Connection'
+              repository: 'cicdjava'
+              dockerfile: 'Dockerfile'
+              tags: |
+                $(Build.BuildId)
