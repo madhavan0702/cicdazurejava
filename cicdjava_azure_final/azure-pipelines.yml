@@ -1,35 +1,40 @@
 trigger:
-  - main   # pipeline runs when code is pushed to the 'main' branch
+  branches:
+    include:
+      - main
 
-# Use self-hosted or Microsoft-hosted agent
 pool:
-  vmImage: 'ubuntu-latest'   # change to Default if you’re using self-hosted agent
+  vmImage: 'ubuntu-latest'
 
 variables:
-  ACR_NAME: 'cicdregistry'                       # 🔹 your Azure Container Registry name
-  ACR_LOGIN_SERVER: 'cicdregistry.azurecr.io'    # 🔹 ACR login server (from Azure Portal → ACR → Overview)
-  IMAGE_NAME: 'cicdjava'
-  TAG: '$(Build.BuildId)'
-  AZURE_WEBAPP_NAME: 'cicdjava-app'              # 🔹 your Web App for Containers name
-  AZURE_RESOURCE_GROUP: 'cicd-rg'                # 🔹 your Resource Group name
-  AZURE_SERVICE_CONNECTION: 'My-Azure-Connection' # 🔹 exact service connection name in DevOps
+  imageName: 'cicdjava'
 
-steps:
-# Step 1: Build Java project with Maven
-- task: Maven@3
-  inputs:
-    mavenPomFile: 'pom.xml'
-    goals: 'clean package -DskipTests=false'
-    options: '-B'
-  displayName: 'Build Java project'
+stages:
+  - stage: Build
+    displayName: 'Build Java App'
+    jobs:
+      - job: MavenBuild
+        steps:
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'clean package'
 
-# Step 2: List build artifacts (optional for debug)
-- script: |
-    echo "Build finished. Listing artifacts..."
-    ls -l target
-  displayName: 'List build artifacts'
+          - publish: target/*.jar
+            artifact: drop
 
-# Step 3: Build and push Docker image to ACR
-- task: Docker@2
-  inputs:
-    containerRegistry: '$(AZURE_SERVICE_CONNECTION)'
+  - stage: Docker
+    displayName: 'Build and Push Docker Image'
+    dependsOn: Build
+    jobs:
+      - job: DockerBuildPush
+        steps:
+          - task: Docker@2
+            displayName: 'Build and Push Image to ACR'
+            inputs:
+              command: 'buildAndPush'
+              repository: '$(imageName)'
+              dockerfile: 'Dockerfile'
+              containerRegistry: 'MyACRConnection'
+              tags: |
+                $(Build.BuildId)
