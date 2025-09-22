@@ -37,4 +37,14 @@ stages:
   # Stage 2: Build & Push Docker Image
   # ---------------------------
   - stage: Docker
-    displayName: 'B
+    displayName: 'Build and Push Docker Image'
+    dependsOn: Build
+    jobs:
+      - job: DockerBuildPush
+        displayName: 'Docker Build & Push'
+        steps:
+          - checkout: self
+
+          - task: Docker@2
+            displayName: 'Build and Push Image to ACR'
+            inputs:
